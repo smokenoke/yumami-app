@@ -2,12 +2,16 @@
 
 A shared life-management app for two people, built as a web-first MVP. Yumami is designed to centralize shared tasks, calendar visibility, financial admin, and important shared files in one calm dashboard.
 
-**Current Phase:** End of Phase 2 - Supabase/auth foundation and initial household schema are complete. Phase 3 (shared task flow) is next.
+**Current Phase:** End of Phase 6 - dashboard, tasks, files, and the full manual finance workflow are complete. Calendar visibility is next.
 
 ## Project Status
 - Phase 1 complete: web app scaffold and Yumami project setup
 - Phase 2 complete: Supabase foundation, initial schema, and first auth flow scaffold
-- Next up: Phase 3 shared task CRUD flow
+- Phase 3 complete: shared task workflow
+- Phase 4 complete: dashboard shell
+- Phase 5 complete: shared files hub
+- Phase 6 complete: finance intake, categories, transaction review, and monthly rollups
+- Next up: Phase 7 calendar visibility
 
 ## Tech Stack
 - Next.js
@@ -42,5 +46,5 @@ npm.cmd run build
 
 ## Notes
 - A real Supabase project still needs to be connected through `.env.local`.
-- The first SQL migration lives in `supabase/migrations/0001_households_tasks.sql`.
+- Finance migrations now extend through `supabase/migrations/0006_finance_categories_and_transactions.sql`.
 - In this environment, `next build` may require elevated execution because of a Windows sandbox `spawn EPERM` issue.

@@ -7,16 +7,115 @@ export type Json =
   | Json[];
 
 export type TaskStatus = "todo" | "in_progress" | "done";
+export type TaskArchivedReason =
+  | "completed"
+  | "dismissed"
+  | "cancelled"
+  | "duplicate"
+  | "other";
+export type ParserStatus = "queued" | "parsed" | "manual_review" | "failed";
+export type FinanceCategoryKind = "income" | "expense";
+export type TransactionDirection = "debit" | "credit";
+export type TransactionReviewStatus = "pending" | "categorized" | "needs_review";
+
+type HouseholdRow = {
+  id: string;
+  name: string;
+  created_at: string;
+};
+
+type HouseholdMemberRow = {
+  id: string;
+  household_id: string;
+  user_id: string;
+  role: "owner" | "member";
+  display_name: string | null;
+  created_at: string;
+};
+
+type TaskRow = {
+  id: string;
+  household_id: string;
+  created_by_user_id: string;
+  assigned_to_user_id: string | null;
+  title: string;
+  notes: string | null;
+  status: TaskStatus;
+  due_at: string | null;
+  completed_at: string | null;
+  archived_at: string | null;
+  archived_reason: TaskArchivedReason | null;
+  created_at: string;
+  updated_at: string;
+};
+
+type FileLinkRow = {
+  id: string;
+  household_id: string;
+  created_by_user_id: string;
+  label: string;
+  url: string;
+  description: string | null;
+  category: string | null;
+  archived_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+type StatementImportRow = {
+  id: string;
+  household_id: string;
+  created_by_user_id: string;
+  institution_label: string;
+  statement_month: string;
+  source_file_name: string;
+  mime_type: string | null;
+  parser_status: ParserStatus;
+  transaction_count: number;
+  review_needed_count: number;
+  notes: string | null;
+  archived_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+type FinanceCategoryRow = {
+  id: string;
+  household_id: string;
+  created_by_user_id: string;
+  name: string;
+  kind: FinanceCategoryKind;
+  archived_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+type StatementTransactionRow = {
+  id: string;
+  household_id: string;
+  statement_import_id: string;
+  finance_category_id: string | null;
+  transaction_date: string;
+  booking_date: string | null;
+  counterparty: string | null;
+  description: string;
+  amount: number;
+  currency: string;
+  direction: TransactionDirection;
+  review_status: TransactionReviewStatus;
+  confidence_score: number | null;
+  source_row_key: string | null;
+  notes: string | null;
+  archived_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
 
 export interface Database {
   public: {
     Tables: {
       households: {
-        Row: {
-          id: string;
-          name: string;
-          created_at: string;
-        };
+        Row: HouseholdRow;
         Insert: {
           id?: string;
           name: string;
@@ -30,14 +129,7 @@ export interface Database {
         Relationships: [];
       };
       household_members: {
-        Row: {
-          id: string;
-          household_id: string;
-          user_id: string;
-          role: "owner" | "member";
-          display_name: string | null;
-          created_at: string;
-        };
+        Row: HouseholdMemberRow;
         Insert: {
           id?: string;
           household_id: string;
@@ -54,21 +146,18 @@ export interface Database {
           display_name?: string | null;
           created_at?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "household_members_household_id_fkey";
+            columns: ["household_id"];
+            isOneToOne: false;
+            referencedRelation: "households";
+            referencedColumns: ["id"];
+          }
+        ];
       };
       tasks: {
-        Row: {
-          id: string;
-          household_id: string;
-          created_by_user_id: string;
-          assigned_to_user_id: string | null;
-          title: string;
-          notes: string | null;
-          status: TaskStatus;
-          due_at: string | null;
-          created_at: string;
-          updated_at: string;
-        };
+        Row: TaskRow;
         Insert: {
           id?: string;
           household_id: string;
@@ -78,6 +167,9 @@ export interface Database {
           notes?: string | null;
           status?: TaskStatus;
           due_at?: string | null;
+          completed_at?: string | null;
+          archived_at?: string | null;
+          archived_reason?: TaskArchivedReason | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -90,11 +182,204 @@ export interface Database {
           notes?: string | null;
           status?: TaskStatus;
           due_at?: string | null;
+          completed_at?: string | null;
+          archived_at?: string | null;
+          archived_reason?: TaskArchivedReason | null;
           created_at?: string;
           updated_at?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "tasks_household_id_fkey";
+            columns: ["household_id"];
+            isOneToOne: false;
+            referencedRelation: "households";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      file_links: {
+        Row: FileLinkRow;
+        Insert: {
+          id?: string;
+          household_id: string;
+          created_by_user_id: string;
+          label: string;
+          url: string;
+          description?: string | null;
+          category?: string | null;
+          archived_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          household_id?: string;
+          created_by_user_id?: string;
+          label?: string;
+          url?: string;
+          description?: string | null;
+          category?: string | null;
+          archived_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "file_links_household_id_fkey";
+            columns: ["household_id"];
+            isOneToOne: false;
+            referencedRelation: "households";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      statement_imports: {
+        Row: StatementImportRow;
+        Insert: {
+          id?: string;
+          household_id: string;
+          created_by_user_id: string;
+          institution_label: string;
+          statement_month: string;
+          source_file_name: string;
+          mime_type?: string | null;
+          parser_status?: ParserStatus;
+          transaction_count?: number;
+          review_needed_count?: number;
+          notes?: string | null;
+          archived_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          household_id?: string;
+          created_by_user_id?: string;
+          institution_label?: string;
+          statement_month?: string;
+          source_file_name?: string;
+          mime_type?: string | null;
+          parser_status?: ParserStatus;
+          transaction_count?: number;
+          review_needed_count?: number;
+          notes?: string | null;
+          archived_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "statement_imports_household_id_fkey";
+            columns: ["household_id"];
+            isOneToOne: false;
+            referencedRelation: "households";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      finance_categories: {
+        Row: FinanceCategoryRow;
+        Insert: {
+          id?: string;
+          household_id: string;
+          created_by_user_id: string;
+          name: string;
+          kind: FinanceCategoryKind;
+          archived_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          household_id?: string;
+          created_by_user_id?: string;
+          name?: string;
+          kind?: FinanceCategoryKind;
+          archived_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "finance_categories_household_id_fkey";
+            columns: ["household_id"];
+            isOneToOne: false;
+            referencedRelation: "households";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      statement_transactions: {
+        Row: StatementTransactionRow;
+        Insert: {
+          id?: string;
+          household_id: string;
+          statement_import_id: string;
+          finance_category_id?: string | null;
+          transaction_date: string;
+          booking_date?: string | null;
+          counterparty?: string | null;
+          description: string;
+          amount: number;
+          currency?: string;
+          direction: TransactionDirection;
+          review_status?: TransactionReviewStatus;
+          confidence_score?: number | null;
+          source_row_key?: string | null;
+          notes?: string | null;
+          archived_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          household_id?: string;
+          statement_import_id?: string;
+          finance_category_id?: string | null;
+          transaction_date?: string;
+          booking_date?: string | null;
+          counterparty?: string | null;
+          description?: string;
+          amount?: number;
+          currency?: string;
+          direction?: TransactionDirection;
+          review_status?: TransactionReviewStatus;
+          confidence_score?: number | null;
+          source_row_key?: string | null;
+          notes?: string | null;
+          archived_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "statement_transactions_household_id_fkey";
+            columns: ["household_id"];
+            isOneToOne: false;
+            referencedRelation: "households";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "statement_transactions_statement_import_id_fkey";
+            columns: ["statement_import_id"];
+            isOneToOne: false;
+            referencedRelation: "statement_imports";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "statement_transactions_finance_category_id_fkey";
+            columns: ["finance_category_id"];
+            isOneToOne: false;
+            referencedRelation: "finance_categories";
+            referencedColumns: ["id"];
+          }
+        ];
       };
     };
+    Views: Record<string, never>;
+    Functions: Record<string, never>;
+    Enums: Record<string, never>;
+    CompositeTypes: Record<string, never>;
   };
 }
