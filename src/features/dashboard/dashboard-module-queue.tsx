@@ -16,7 +16,7 @@ const queuedModules = [
   {
     title: "Calendar visibility",
     stage: "Phase 7",
-    summary: "A clear household overview of upcoming schedule commitments.",
+    summary: "Shared calendar sources and upcoming household commitments are now live from the dashboard.",
   },
 ] as const;
 
@@ -33,7 +33,7 @@ export function DashboardModuleQueue({ mode }: DashboardModuleQueueProps) {
           </h2>
         </div>
         <div className="rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-600">
-          {mode === "live" ? "Grounded in live task data" : "Safe dashboard prototype mode"}
+          {mode === "live" ? "Grounded in live household data" : "Safe dashboard prototype mode"}
         </div>
       </div>
 

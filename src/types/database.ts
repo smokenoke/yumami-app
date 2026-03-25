@@ -17,6 +17,8 @@ export type ParserStatus = "queued" | "parsed" | "manual_review" | "failed";
 export type FinanceCategoryKind = "income" | "expense";
 export type TransactionDirection = "debit" | "credit";
 export type TransactionReviewStatus = "pending" | "categorized" | "needs_review";
+export type CalendarProvider = "icloud" | "google" | "outlook" | "other";
+export type CalendarSourceKind = "manual" | "linked";
 
 type HouseholdRow = {
   id: string;
@@ -106,6 +108,35 @@ type StatementTransactionRow = {
   confidence_score: number | null;
   source_row_key: string | null;
   notes: string | null;
+  archived_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+type HouseholdCalendarRow = {
+  id: string;
+  household_id: string;
+  created_by_user_id: string;
+  label: string;
+  provider: CalendarProvider;
+  url: string | null;
+  color_token: string | null;
+  archived_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+type CalendarEventRow = {
+  id: string;
+  household_id: string;
+  household_calendar_id: string | null;
+  created_by_user_id: string;
+  title: string;
+  starts_at: string;
+  ends_at: string | null;
+  location: string | null;
+  notes: string | null;
+  source_kind: CalendarSourceKind;
   archived_at: string | null;
   created_at: string;
   updated_at: string;
@@ -372,6 +403,91 @@ export interface Database {
             columns: ["finance_category_id"];
             isOneToOne: false;
             referencedRelation: "finance_categories";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      household_calendars: {
+        Row: HouseholdCalendarRow;
+        Insert: {
+          id?: string;
+          household_id: string;
+          created_by_user_id: string;
+          label: string;
+          provider: CalendarProvider;
+          url?: string | null;
+          color_token?: string | null;
+          archived_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          household_id?: string;
+          created_by_user_id?: string;
+          label?: string;
+          provider?: CalendarProvider;
+          url?: string | null;
+          color_token?: string | null;
+          archived_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "household_calendars_household_id_fkey";
+            columns: ["household_id"];
+            isOneToOne: false;
+            referencedRelation: "households";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      calendar_events: {
+        Row: CalendarEventRow;
+        Insert: {
+          id?: string;
+          household_id: string;
+          household_calendar_id?: string | null;
+          created_by_user_id: string;
+          title: string;
+          starts_at: string;
+          ends_at?: string | null;
+          location?: string | null;
+          notes?: string | null;
+          source_kind?: CalendarSourceKind;
+          archived_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          household_id?: string;
+          household_calendar_id?: string | null;
+          created_by_user_id?: string;
+          title?: string;
+          starts_at?: string;
+          ends_at?: string | null;
+          location?: string | null;
+          notes?: string | null;
+          source_kind?: CalendarSourceKind;
+          archived_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "calendar_events_household_id_fkey";
+            columns: ["household_id"];
+            isOneToOne: false;
+            referencedRelation: "households";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "calendar_events_household_calendar_id_fkey";
+            columns: ["household_calendar_id"];
+            isOneToOne: false;
+            referencedRelation: "household_calendars";
             referencedColumns: ["id"];
           }
         ];

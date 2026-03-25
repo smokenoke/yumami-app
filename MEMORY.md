@@ -5,12 +5,12 @@ Keep concise but do not remove still-relevant decisions.
 -->
 
 ## Active Phase & Goal
-**Current Task:** Phase 7 - calendar visibility
+**Current Task:** Post-Phase 7 UX/UI reorganization
 **Next Steps:**
-1. Add the first calendar visibility module to the dashboard.
-2. Keep the dashboard shell as the primary home for all modules.
-3. Preserve demo/live fallback behavior for unconfigured environments.
-4. Prepare the app for a later AI layer on top of structured household data.
+1. Reorganize the long dashboard into a clearer product structure.
+2. Introduce proper navigation and module-level surfaces instead of one stacked page.
+3. Keep the proven data model and workflows intact while improving the product experience.
+4. Prepare the app for the later AI layer on top of structured household data.
 
 ## Architectural Decisions
 - [2026-03-19] Yumami is web-first for MVP, with mobile added later after the data model and core flows are stable.
@@ -28,10 +28,12 @@ Keep concise but do not remove still-relevant decisions.
 - [2026-03-22] Phase 6 adds a link-between-now-and-later finance intake model: `statement_imports` records household-scoped PDF intake metadata now, while leaving room for the later parser and categorization workflow.
 - [2026-03-24] Finance categories stay flexible and human-shaped: Yumami seeds household categories from the real Excel reporting buckets, lets you add new ones over time, and archives them instead of using an `active` flag or rigid sort metadata.
 - [2026-03-24] The finance module now treats manual transaction review as a first-class workflow: statement imports feed `statement_transactions`, category mapping updates import counters automatically, and monthly rollups are derived from structured household finance data instead of spreadsheets alone.
+- [2026-03-24] Phase 7 uses lightweight calendar visibility first: shared calendar sources and upcoming events are stored at the household level now, with room for deeper calendar sync later.
+- [2026-03-24] The next priority is UX/UI reorganization, because the single long integration page has served its purpose as a build surface and now needs to become a clearer product experience.
 
 ## Known Issues & Quirks
-- A real Supabase project is still required for live auth and persistent tasks/files/finance imports.
-- Calendar integration path is still intentionally lightweight for MVP.
+- A real Supabase project is still required for live auth and persistent tasks/files/finance imports/calendar data.
+- Deep third-party calendar sync is still intentionally deferred.
 - PDF parsing should initially support one known bank statement format only.
 - `next build` needed elevated execution in this environment because the sandbox blocked a Windows spawn step.
 
@@ -42,5 +44,6 @@ Keep concise but do not remove still-relevant decisions.
 - [x] Phase 4: Dashboard shell
 - [x] Phase 5: Files hub
 - [x] Phase 6: Financial PDF import
-- [ ] Phase 7: Calendar visibility
+- [x] Phase 7: Calendar visibility
 - [ ] Phase 8: AI layer (v1.5)
+- [ ] UX/UI pass: navigation, module surfaces, and dashboard reorganization

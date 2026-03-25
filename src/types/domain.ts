@@ -9,6 +9,8 @@ export type StatementImport = Database["public"]["Tables"]["statement_imports"][
 export type FinanceCategory = Database["public"]["Tables"]["finance_categories"]["Row"];
 export type StatementTransaction =
   Database["public"]["Tables"]["statement_transactions"]["Row"];
+export type HouseholdCalendar = Database["public"]["Tables"]["household_calendars"]["Row"];
+export type CalendarEvent = Database["public"]["Tables"]["calendar_events"]["Row"];
 
 export interface DashboardSummary {
   householdName: string;
@@ -65,6 +67,15 @@ export interface FinanceWorkspace {
   categories: FinanceCategory[];
   transactions: StatementTransaction[];
   rollups: FinanceMonthlyRollup[];
+  canMutate: boolean;
+  statusMessage: string;
+}
+
+export interface CalendarWorkspace {
+  mode: "demo" | "live";
+  householdName: string;
+  calendars: HouseholdCalendar[];
+  events: CalendarEvent[];
   canMutate: boolean;
   statusMessage: string;
 }

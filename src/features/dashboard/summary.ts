@@ -1,4 +1,10 @@
-import type { DashboardSummary, FileWorkspace, FinanceWorkspace, TaskWorkspace } from "@/types/domain";
+import type {
+  CalendarWorkspace,
+  DashboardSummary,
+  FileWorkspace,
+  FinanceWorkspace,
+  TaskWorkspace,
+} from "@/types/domain";
 
 function countCompletedTasks(workspace: TaskWorkspace) {
   return workspace.tasks.filter((task) => task.status === "done").length;
@@ -8,10 +14,38 @@ function countInProgressTasks(workspace: TaskWorkspace) {
   return workspace.tasks.filter((task) => task.status === "in_progress").length;
 }
 
+function formatNet(value: number) {
+  return new Intl.NumberFormat("en-BE", {
+    style: "currency",
+    currency: "EUR",
+  }).format(value);
+}
+
+function buildNextCalendarLabel(calendarWorkspace: CalendarWorkspace) {
+  const nextEvent = calendarWorkspace.events[0];
+
+  if (!nextEvent) {
+    return calendarWorkspace.mode === "live"
+      ? "No upcoming events yet. Add the next shared commitment to make the dashboard schedule-aware."
+      : "Calendar visibility is ready for real shared events once your household calendar is connected.";
+  }
+
+  const nextTime = new Intl.DateTimeFormat("en-BE", {
+    weekday: "short",
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(nextEvent.starts_at));
+
+  return `${nextEvent.title} is next on ${nextTime}.`;
+}
+
 export function buildDashboardSummary(
   taskWorkspace: TaskWorkspace,
   fileWorkspace: FileWorkspace,
   financeWorkspace: FinanceWorkspace,
+  calendarWorkspace: CalendarWorkspace,
 ): DashboardSummary {
   const totalTasks = taskWorkspace.tasks.length;
   const openTasks = taskWorkspace.tasks.filter((task) => task.status !== "done").length;
@@ -29,16 +63,10 @@ export function buildDashboardSummary(
     totalTasks,
     openTasks,
     upcomingTasks,
-    nextCalendarEventLabel:
-      totalTasks > 0
-        ? `${upcomingTasks} task${upcomingTasks === 1 ? "" : "s"} still waiting to be picked up.`
-        : "Calendar visibility will land after tasks and finance are stable.",
+    nextCalendarEventLabel: buildNextCalendarLabel(calendarWorkspace),
     financeReviewLabel:
       latestRollup
-        ? `${reviewCount} finance item${reviewCount === 1 ? "" : "s"} need review. Latest net: ${new Intl.NumberFormat("en-BE", {
-            style: "currency",
-            currency: "EUR",
-          }).format(latestRollup.net)}.`
+        ? `${reviewCount} finance item${reviewCount === 1 ? "" : "s"} need review. Latest net: ${formatNet(latestRollup.net)}.`
         : completedTasks > 0
           ? `${completedTasks} task${completedTasks === 1 ? "" : "s"} completed and ready to inform later routines.`
           : "Finance import is ready for its first statement intake.",
@@ -55,6 +83,7 @@ export function buildDashboardHighlights(
   taskWorkspace: TaskWorkspace,
   fileWorkspace: FileWorkspace,
   financeWorkspace: FinanceWorkspace,
+  calendarWorkspace: CalendarWorkspace,
 ) {
   const completedTasks = countCompletedTasks(taskWorkspace);
   const openTasks = taskWorkspace.tasks.filter((task) => task.status !== "done").length;
@@ -89,14 +118,16 @@ export function buildDashboardHighlights(
           : "The files hub is ready to become the shared doorway into your docs and folders.",
     },
     {
+      title: "Calendar pulse",
+      value: `${calendarWorkspace.events.length}`,
+      description: buildNextCalendarLabel(calendarWorkspace),
+    },
+    {
       title: "Finance intake",
       value: `${transactionCount}`,
       description:
         latestRollup
-          ? `The latest month is sitting at ${new Intl.NumberFormat("en-BE", {
-              style: "currency",
-              currency: "EUR",
-            }).format(latestRollup.net)} net across ${importCount} tracked import${importCount === 1 ? "" : "s"}.`
+          ? `The latest month is sitting at ${formatNet(latestRollup.net)} net across ${importCount} tracked import${importCount === 1 ? "" : "s"}.`
           : importCount > 0
             ? "Statement imports are now tracked and ready for transaction review and monthly rollups."
             : "The finance module is ready for its first PDF statement intake.",
