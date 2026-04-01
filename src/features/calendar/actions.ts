@@ -6,6 +6,11 @@ import { z } from "zod";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getHouseholdContextForActions } from "@/lib/yumami/tasks";
 
+function revalidateCalendarRoutes() {
+  revalidatePath("/");
+  revalidatePath("/calendar");
+}
+
 export interface CalendarFormState {
   status: "idle" | "success" | "error";
   message: string;
@@ -70,7 +75,7 @@ export async function createCalendarSourceAction(
       return { status: "error", message: error.message };
     }
 
-    revalidatePath("/");
+    revalidateCalendarRoutes();
 
     return {
       status: "success",
@@ -132,7 +137,7 @@ export async function createCalendarEventAction(
       return { status: "error", message: error.message };
     }
 
-    revalidatePath("/");
+    revalidateCalendarRoutes();
 
     return {
       status: "success",
@@ -165,7 +170,7 @@ export async function archiveCalendarSourceAction(formData: FormData) {
       .eq("household_id", householdContext.householdId)
       .is("archived_at", null);
 
-    revalidatePath("/");
+    revalidateCalendarRoutes();
   } catch {
     return;
   }
@@ -190,8 +195,10 @@ export async function archiveCalendarEventAction(formData: FormData) {
       .eq("household_id", householdContext.householdId)
       .is("archived_at", null);
 
-    revalidatePath("/");
+    revalidateCalendarRoutes();
   } catch {
     return;
   }
 }
+
+

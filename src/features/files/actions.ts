@@ -6,6 +6,11 @@ import { z } from "zod";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getHouseholdContextForActions } from "@/lib/yumami/tasks";
 
+function revalidateFileRoutes() {
+  revalidatePath("/");
+  revalidatePath("/files");
+}
+
 export interface FileLinkFormState {
   status: "idle" | "success" | "error";
   message: string;
@@ -65,7 +70,7 @@ export async function createFileLinkAction(
       };
     }
 
-    revalidatePath("/");
+    revalidateFileRoutes();
 
     return {
       status: "success",
@@ -100,8 +105,10 @@ export async function archiveFileLinkAction(formData: FormData) {
       .eq("household_id", householdContext.householdId)
       .is("archived_at", null);
 
-    revalidatePath("/");
+    revalidateFileRoutes();
   } catch {
     return;
   }
 }
+
+

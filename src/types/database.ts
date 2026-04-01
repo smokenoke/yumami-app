@@ -1,4 +1,4 @@
-export type Json =
+﻿export type Json =
   | string
   | number
   | boolean
@@ -7,6 +7,7 @@ export type Json =
   | Json[];
 
 export type TaskStatus = "todo" | "in_progress" | "done";
+export type TaskPriority = "low" | "medium" | "high";
 export type TaskArchivedReason =
   | "completed"
   | "dismissed"
@@ -43,6 +44,7 @@ type TaskRow = {
   title: string;
   notes: string | null;
   status: TaskStatus;
+  priority: TaskPriority;
   due_at: string | null;
   completed_at: string | null;
   archived_at: string | null;
@@ -197,6 +199,7 @@ export interface Database {
           title: string;
           notes?: string | null;
           status?: TaskStatus;
+          priority?: TaskPriority;
           due_at?: string | null;
           completed_at?: string | null;
           archived_at?: string | null;
@@ -212,6 +215,7 @@ export interface Database {
           title?: string;
           notes?: string | null;
           status?: TaskStatus;
+          priority?: TaskPriority;
           due_at?: string | null;
           completed_at?: string | null;
           archived_at?: string | null;

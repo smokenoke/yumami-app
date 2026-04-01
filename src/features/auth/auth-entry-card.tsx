@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useActionState } from "react";
 
@@ -10,6 +10,7 @@ import {
 
 interface AuthEntryCardProps {
   userEmail?: string;
+  compact?: boolean;
 }
 
 const initialAuthActionState: AuthActionState = {
@@ -17,23 +18,27 @@ const initialAuthActionState: AuthActionState = {
   message: "",
 };
 
-export function AuthEntryCard({ userEmail }: AuthEntryCardProps) {
+export function AuthEntryCard({ userEmail, compact = false }: AuthEntryCardProps) {
   const [state, formAction, pending] = useActionState(
     requestMagicLinkAction,
     initialAuthActionState,
   );
 
+  const wrapperClass = compact
+    ? "mt-4"
+    : "rounded-[2rem] border border-[var(--border-soft)] bg-white px-6 py-6 shadow-[0_24px_50px_-35px_rgba(15,23,42,0.35)]";
+
   return (
-    <aside className="rounded-[2rem] border border-[var(--border-soft)] bg-white px-6 py-6 shadow-[0_24px_50px_-35px_rgba(15,23,42,0.35)]">
-      <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[var(--accent-deep)]">
-        Auth flow
-      </p>
+    <aside className={wrapperClass}>
+      {!compact ? (
+        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[var(--accent-deep)]">
+          Sign in
+        </p>
+      ) : null}
       {userEmail ? (
-        <div className="mt-5 space-y-4">
+        <div className={compact ? "space-y-3" : "mt-5 space-y-4"}>
           <div className="rounded-[1.5rem] bg-emerald-50 px-4 py-4 text-sm leading-6 text-emerald-800">
             Signed in as <span className="font-semibold">{userEmail}</span>.
-            Next up: attach this user to a Yumami household and start the shared
-            task flow.
           </div>
           <form action={signOutAction}>
             <button
@@ -46,14 +51,13 @@ export function AuthEntryCard({ userEmail }: AuthEntryCardProps) {
         </div>
       ) : (
         <>
-          <p className="mt-4 text-sm leading-6 text-slate-600">
-            Start with a magic-link sign-in so the first user can create or join
-            a shared household.
+          <p className={compact ? "text-sm leading-6 text-slate-600" : "mt-4 text-sm leading-6 text-slate-600"}>
+            Send yourself a sign-in link when you want to use Supabase auth for real.
           </p>
-          <form action={formAction} className="mt-5 space-y-4">
+          <form action={formAction} className={compact ? "mt-4 space-y-4" : "mt-5 space-y-4"}>
             <label className="block">
               <span className="mb-2 block text-sm font-medium text-slate-700">
-                Email address
+                Email
               </span>
               <input
                 type="email"
@@ -68,7 +72,7 @@ export function AuthEntryCard({ userEmail }: AuthEntryCardProps) {
               disabled={pending}
               className="rounded-full bg-[var(--accent-deep)] px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {pending ? "Sending link..." : "Send magic link"}
+              {pending ? "Sending link..." : "Send sign-in link"}
             </button>
           </form>
           {state.status !== "idle" ? (
@@ -87,3 +91,4 @@ export function AuthEntryCard({ userEmail }: AuthEntryCardProps) {
     </aside>
   );
 }
+

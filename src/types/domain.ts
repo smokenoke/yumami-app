@@ -1,4 +1,4 @@
-import type { Database, TaskStatus } from "@/types/database";
+﻿import type { Database, TaskPriority, TaskStatus } from "@/types/database";
 
 export type Household = Database["public"]["Tables"]["households"]["Row"];
 export type HouseholdMember =
@@ -41,13 +41,22 @@ export interface TaskDraft {
   notes?: string;
   assignedToUserId?: string | null;
   dueAt?: string | null;
+  priority?: TaskPriority;
   status?: TaskStatus;
+}
+
+export interface HouseholdParticipant {
+  userId: string;
+  displayName: string;
+  role: HouseholdMember["role"];
 }
 
 export interface TaskWorkspace {
   mode: "demo" | "live";
   householdName: string;
   tasks: Task[];
+  archivedTasks: Task[];
+  members: HouseholdParticipant[];
   canMutate: boolean;
   statusMessage: string;
 }

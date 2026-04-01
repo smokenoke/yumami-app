@@ -1,11 +1,16 @@
-"use server";
+﻿"use server";
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getHouseholdContextForActions } from "@/lib/yumami/tasks";
-import type { TaskArchivedReason, TaskStatus } from "@/types/database";
+import type { TaskArchivedReason, TaskPriority, TaskStatus } from "@/types/database";
+
+function revalidateTaskRoutes() {
+  revalidatePath("/");
+  revalidatePath("/tasks");
+}
 
 export interface TaskFormState {
   status: "idle" | "success" | "error";
@@ -15,12 +20,18 @@ export interface TaskFormState {
 const createTaskSchema = z.object({
   title: z.string().trim().min(1).max(120),
   notes: z.string().trim().max(500).optional(),
+  assignedToUserId: z.string().optional().or(z.literal("")),
+  dueAt: z.string().optional().or(z.literal("")),
+  priority: z.enum(["low", "medium", "high"]).default("medium"),
 });
 
 const updateTaskSchema = z.object({
   taskId: z.string().min(1),
   title: z.string().trim().min(1).max(120),
   notes: z.string().trim().max(500).optional(),
+  assignedToUserId: z.string().optional().or(z.literal("")),
+  dueAt: z.string().optional().or(z.literal("")),
+  priority: z.enum(["low", "medium", "high"]),
   status: z.enum(["todo", "in_progress", "done"]),
 });
 
@@ -28,6 +39,14 @@ const archiveTaskSchema = z.object({
   taskId: z.string().min(1),
   archiveReason: z.enum(["completed", "dismissed", "cancelled", "duplicate", "other"]),
 });
+
+function toNullableIso(value: string | undefined) {
+  if (!value) {
+    return null;
+  }
+
+  return new Date(value).toISOString();
+}
 
 function lifecycleFieldsForStatus(
   nextStatus: TaskStatus,
@@ -66,6 +85,16 @@ async function getCurrentTask(
   return taskResult.data;
 }
 
+function buildTaskPayload(parsed: z.infer<typeof createTaskSchema | typeof updateTaskSchema>) {
+  return {
+    title: parsed.title,
+    notes: parsed.notes || null,
+    assigned_to_user_id: parsed.assignedToUserId || null,
+    due_at: toNullableIso(parsed.dueAt),
+    priority: parsed.priority as TaskPriority,
+  };
+}
+
 export async function createTaskAction(
   _previousState: TaskFormState,
   formData: FormData,
@@ -73,12 +102,15 @@ export async function createTaskAction(
   const parsed = createTaskSchema.safeParse({
     title: formData.get("title"),
     notes: formData.get("notes") || undefined,
+    assignedToUserId: formData.get("assignedToUserId") || "",
+    dueAt: formData.get("dueAt") || "",
+    priority: formData.get("priority") || "medium",
   });
 
   if (!parsed.success) {
     return {
       status: "error",
-      message: "Add a short task title before creating a shared task.",
+      message: "Add a title before creating a to-do.",
     };
   }
 
@@ -97,8 +129,7 @@ export async function createTaskAction(
     const { error } = await supabase.from("tasks").insert({
       household_id: householdContext.householdId,
       created_by_user_id: householdContext.userId,
-      title: parsed.data.title,
-      notes: parsed.data.notes || null,
+      ...buildTaskPayload(parsed.data),
       status: "todo",
       completed_at: null,
       archived_at: null,
@@ -112,11 +143,11 @@ export async function createTaskAction(
       };
     }
 
-    revalidatePath("/");
+    revalidateTaskRoutes();
 
     return {
       status: "success",
-      message: "Shared task created.",
+      message: "To-do created.",
     };
   } catch {
     return {
@@ -135,6 +166,9 @@ export async function updateTaskAction(
     taskId: formData.get("taskId"),
     title: formData.get("title"),
     notes: formData.get("notes") || undefined,
+    assignedToUserId: formData.get("assignedToUserId") || "",
+    dueAt: formData.get("dueAt") || "",
+    priority: formData.get("priority") || "medium",
     status: formData.get("status"),
   });
 
@@ -177,8 +211,7 @@ export async function updateTaskAction(
     const { error } = await supabase
       .from("tasks")
       .update({
-        title: parsed.data.title,
-        notes: parsed.data.notes || null,
+        ...buildTaskPayload(parsed.data),
         status: parsed.data.status,
         completed_at: lifecycleFields.completed_at,
         archived_reason: lifecycleFields.archived_reason,
@@ -195,7 +228,7 @@ export async function updateTaskAction(
       };
     }
 
-    revalidatePath("/");
+    revalidateTaskRoutes();
 
     return {
       status: "success",
@@ -248,7 +281,7 @@ export async function toggleTaskStatusAction(formData: FormData) {
       .eq("household_id", householdContext.householdId)
       .is("archived_at", null);
 
-    revalidatePath("/");
+    revalidateTaskRoutes();
   } catch {
     return;
   }
@@ -294,7 +327,7 @@ export async function archiveTaskAction(formData: FormData) {
       .eq("household_id", householdContext.householdId)
       .is("archived_at", null);
 
-    revalidatePath("/");
+    revalidateTaskRoutes();
   } catch {
     return;
   }

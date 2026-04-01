@@ -7,6 +7,11 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { syncStatementImportCounters } from "@/lib/yumami/finance";
 import { getHouseholdContextForActions } from "@/lib/yumami/tasks";
 
+function revalidateFinanceRoutes() {
+  revalidatePath("/");
+  revalidatePath("/finance");
+}
+
 export interface StatementImportFormState {
   status: "idle" | "success" | "error";
   message: string;
@@ -118,7 +123,7 @@ export async function createStatementImportAction(
       };
     }
 
-    revalidatePath("/");
+    revalidateFinanceRoutes();
 
     return {
       status: "success",
@@ -153,7 +158,7 @@ export async function archiveStatementImportAction(formData: FormData) {
       .eq("household_id", householdContext.householdId)
       .is("archived_at", null);
 
-    revalidatePath("/");
+    revalidateFinanceRoutes();
   } catch {
     return;
   }
@@ -205,7 +210,7 @@ export async function createFinanceCategoryAction(
       };
     }
 
-    revalidatePath("/");
+    revalidateFinanceRoutes();
 
     return {
       status: "success",
@@ -239,7 +244,7 @@ export async function archiveFinanceCategoryAction(formData: FormData) {
       .eq("household_id", householdContext.householdId)
       .is("archived_at", null);
 
-    revalidatePath("/");
+    revalidateFinanceRoutes();
   } catch {
     return;
   }
@@ -299,7 +304,7 @@ export async function createTransactionAction(
     }
 
     await syncStatementImportCounters(parsed.data.statementImportId, householdContext.householdId);
-    revalidatePath("/");
+    revalidateFinanceRoutes();
 
     return {
       status: "success",
@@ -354,7 +359,7 @@ export async function updateTransactionReviewAction(formData: FormData) {
       .is("archived_at", null);
 
     await syncStatementImportCounters(parsed.data.statementImportId, householdContext.householdId);
-    revalidatePath("/");
+    revalidateFinanceRoutes();
   } catch {
     return;
   }
@@ -386,8 +391,11 @@ export async function archiveTransactionAction(formData: FormData) {
       .is("archived_at", null);
 
     await syncStatementImportCounters(statementImportId, householdContext.householdId);
-    revalidatePath("/");
+    revalidateFinanceRoutes();
   } catch {
     return;
   }
 }
+
+
+

@@ -1,6 +1,7 @@
-"use server";
+﻿"use server";
 
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
+import { redirect } from "next/navigation";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -42,7 +43,7 @@ export async function requestMagicLinkAction(
 
     return {
       status: "success",
-      message: "Magic link sent. Check your email to continue.",
+      message: "Sign-in link sent. Check your email to continue.",
     };
   } catch {
     return {
@@ -53,7 +54,27 @@ export async function requestMagicLinkAction(
   }
 }
 
+export async function continueWithDemoAction(formData: FormData) {
+  const emailValue = formData.get("email");
+
+  if (typeof emailValue !== "string" || emailValue.trim().length === 0) {
+    redirect("/");
+  }
+
+  const cookieStore = await cookies();
+  cookieStore.set("yumami-demo-email", emailValue.trim(), {
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/",
+  });
+
+  redirect("/");
+}
+
 export async function signOutAction() {
+  const cookieStore = await cookies();
+  cookieStore.delete("yumami-demo-email");
+
   try {
     const supabase = await createSupabaseServerClient();
     await supabase.auth.signOut();
@@ -61,3 +82,4 @@ export async function signOutAction() {
     return;
   }
 }
+

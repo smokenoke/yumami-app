@@ -1,14 +1,9 @@
+﻿import Link from "next/link";
+
 import { AppShell } from "@/components/app-shell";
-import { AuthEntryCard } from "@/features/auth/auth-entry-card";
-import { SharedCalendarVisibility } from "@/features/calendar/shared-calendar-visibility";
-import { DashboardHero } from "@/features/dashboard/dashboard-hero";
-import { DashboardModuleQueue } from "@/features/dashboard/dashboard-module-queue";
-import { DashboardStatusStrip } from "@/features/dashboard/dashboard-status-strip";
-import { DashboardSummaryGrid } from "@/features/dashboard/dashboard-summary-grid";
-import { buildDashboardHighlights, buildDashboardSummary } from "@/features/dashboard/summary";
-import { SharedFilesHub } from "@/features/files/shared-files-hub";
-import { SharedFinanceIntake } from "@/features/finance/shared-finance-intake";
-import { SharedTaskBoard } from "@/features/tasks/shared-task-board";
+import { HomeDashboard } from "@/features/home/home-dashboard";
+import { EntryScreen } from "@/features/auth/entry-screen";
+import { buildDashboardSummary } from "@/features/dashboard/summary";
 import { getAuthState } from "@/lib/supabase/session";
 import { getCalendarWorkspace } from "@/lib/yumami/calendar";
 import { getFileWorkspace } from "@/lib/yumami/files";
@@ -23,13 +18,12 @@ export default async function Home() {
     getFinanceWorkspace(),
     getCalendarWorkspace(),
   ]);
+
+  if (!authState.hasEntryAccess) {
+    return <EntryScreen isConfigured={authState.isConfigured} />;
+  }
+
   const summary = buildDashboardSummary(
-    taskWorkspace,
-    fileWorkspace,
-    financeWorkspace,
-    calendarWorkspace,
-  );
-  const highlights = buildDashboardHighlights(
     taskWorkspace,
     fileWorkspace,
     financeWorkspace,
@@ -39,45 +33,29 @@ export default async function Home() {
   return (
     <AppShell
       eyebrow="Yumami"
-      title="The dashboard shell is now the home of the product."
-      description="Yumami now captures shared tasks, file links, finance workflow, and calendar visibility in one place. The next step after this phase is a dedicated UX pass so these proven modules can become a cleaner product experience."
+      title="What matters next, in one calm place."
+      description="See the most important parts of your shared home life first, then jump into the full pages when you need more detail."
+      actions={
+        <>
+          <Link href="/tasks" className="rounded-full border border-[var(--border-soft)] bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
+            Open to-dos
+          </Link>
+          <Link href="/calendar" className="rounded-full bg-[var(--accent-deep)] px-4 py-2 text-sm font-medium text-white transition hover:opacity-90">
+            Open calendar
+          </Link>
+        </>
+      }
     >
-      <div className="space-y-5">
-        <DashboardStatusStrip
-          isConfigured={authState.isConfigured}
-          userEmail={authState.user?.email}
-          canMutate={
-            taskWorkspace.canMutate ||
-            fileWorkspace.canMutate ||
-            financeWorkspace.canMutate ||
-            calendarWorkspace.canMutate
-          }
-        />
-        <DashboardHero
-          householdName={summary.householdName}
-          mode={taskWorkspace.mode}
-          openTasks={summary.openTasks}
-        />
-        <DashboardSummaryGrid summary={summary} />
-        <section className="grid gap-4 xl:grid-cols-6">
-          {highlights.map((item) => (
-            <article
-              key={item.title}
-              className="rounded-[1.75rem] border border-[var(--border-soft)] bg-white px-5 py-5 shadow-[0_24px_50px_-35px_rgba(15,23,42,0.35)]"
-            >
-              <p className="text-sm text-slate-500">{item.title}</p>
-              <p className="mt-3 text-2xl font-semibold text-slate-900">{item.value}</p>
-              <p className="mt-3 text-sm leading-6 text-slate-600">{item.description}</p>
-            </article>
-          ))}
-        </section>
-        <SharedTaskBoard workspace={taskWorkspace} />
-        <SharedCalendarVisibility workspace={calendarWorkspace} />
-        <SharedFilesHub workspace={fileWorkspace} />
-        <SharedFinanceIntake workspace={financeWorkspace} />
-        <DashboardModuleQueue mode={taskWorkspace.mode} />
-        <AuthEntryCard userEmail={authState.user?.email} />
-      </div>
+      <HomeDashboard
+        isConfigured={authState.isConfigured}
+        viewerEmail={authState.user?.email ?? authState.demoEmail ?? undefined}
+        summary={summary}
+        taskWorkspace={taskWorkspace}
+        calendarWorkspace={calendarWorkspace}
+        financeWorkspace={financeWorkspace}
+        fileWorkspace={fileWorkspace}
+      />
     </AppShell>
   );
 }
+
