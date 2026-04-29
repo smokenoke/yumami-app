@@ -20,8 +20,8 @@ export function AppNav({ variant = "mobile" }: AppNavProps) {
 
   if (variant === "desktop") {
     return (
-      <nav className="hidden md:block">
-        <ul className="flex flex-wrap items-center gap-2">
+      <nav className="hidden flex-1 justify-center md:flex">
+        <ul className="grid min-w-[620px] grid-cols-5 gap-3">
           {navItems.map((item) => {
             const isActive = item.href === "/" ? pathname === "/" : pathname?.startsWith(item.href);
 
@@ -29,9 +29,9 @@ export function AppNav({ variant = "mobile" }: AppNavProps) {
               <li key={item.href}>
                 <Link
                   href={item.href}
-                  className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                  className={`flex h-11 items-center justify-center rounded-full px-4 text-sm font-medium transition ${
                     isActive
-                      ? "bg-[var(--accent-deep)] text-white"
+                      ? "bg-[var(--accent-deep)] text-white shadow-sm"
                       : "border border-[var(--border-soft)] bg-white text-slate-700 hover:bg-slate-50"
                   }`}
                 >
@@ -70,4 +70,3 @@ export function AppNav({ variant = "mobile" }: AppNavProps) {
     </nav>
   );
 }
-

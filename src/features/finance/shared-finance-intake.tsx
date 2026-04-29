@@ -1,9 +1,9 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 
 import { ActionPanel } from "@/components/action-panel";
 import {
   archiveFinanceCategoryAction,
-  archiveStatementImportAction,
+  deleteStatementImportAction,
   archiveTransactionAction,
   updateTransactionReviewAction,
 } from "@/features/finance/actions";
@@ -222,14 +222,14 @@ export function SharedFinanceIntake({ workspace }: SharedFinanceIntakeProps) {
                     </div>
                   </div>
                   <div className="mt-4">
-                    <form action={archiveStatementImportAction}>
+                    <form action={deleteStatementImportAction}>
                       <input type="hidden" name="importId" value={item.id} />
                       <button
                         type="submit"
                         disabled={!workspace.canMutate}
                         className="rounded-full border border-rose-200 px-3 py-2 text-sm font-medium text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
                       >
-                        Archive import
+                        Delete import
                       </button>
                     </form>
                   </div>
@@ -405,3 +405,4 @@ export function SharedFinanceIntake({ workspace }: SharedFinanceIntakeProps) {
     </section>
   );
 }
+

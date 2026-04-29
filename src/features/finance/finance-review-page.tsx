@@ -1,9 +1,9 @@
-﻿import { ActionPanel } from "@/components/action-panel";
-import {
+﻿import {
   archiveTransactionAction,
+  createCategoryFromCustomAction,
+  createCategoryFromSuggestionAction,
   updateTransactionReviewAction,
 } from "@/features/finance/actions";
-import { TransactionComposer } from "@/features/finance/transaction-composer";
 import type { FinanceWorkspace } from "@/types/domain";
 
 function reviewStatusLabel(status: FinanceWorkspace["transactions"][number]["review_status"]) {
@@ -41,29 +41,19 @@ export function FinanceReviewPage({ workspace }: FinanceReviewPageProps) {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[var(--accent-deep)]">Review</p>
-            <h2 className="mt-3 text-2xl font-semibold text-slate-900">Clean up the details here</h2>
-            <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600">The review queue belongs on its own page so the main finance view can stay focused on the bigger picture.</p>
+            <h2 className="mt-3 text-2xl font-semibold text-slate-900">Teach Yumami your categories</h2>
+            <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600">The parser reads the statements automatically. This page now only shows the lines that still need your attention, and every choice becomes merchant memory for the next import.</p>
           </div>
-          <ActionPanel
-            buttonLabel="Add transaction"
-            title="Add transaction manually"
-            description="Temporary helper while the parser is still on the roadmap."
-            variant="primary"
-            disabled={!workspace.canMutate}
-          >
-            <TransactionComposer
-              canMutate={workspace.canMutate}
-              imports={workspace.imports}
-              categories={workspace.categories}
-            />
-          </ActionPanel>
+          <div className="rounded-full bg-[var(--surface-muted)] px-4 py-2 text-sm text-slate-700">
+            Learned merchants: {workspace.merchantRules.length}
+          </div>
         </div>
         <div className="mt-5 grid gap-3 md:grid-cols-3">
           <div className="rounded-[1.3rem] bg-[var(--surface-muted)] px-4 py-4 text-sm text-slate-700">
             <span className="font-semibold text-slate-900">Need review:</span> {pendingReview.length}
           </div>
           <div className="rounded-[1.3rem] bg-[var(--surface-muted)] px-4 py-4 text-sm text-slate-700">
-            <span className="font-semibold text-slate-900">Total active:</span> {workspace.transactions.length}
+            <span className="font-semibold text-slate-900">Known merchants:</span> {workspace.merchantRules.length}
           </div>
           <div className="rounded-[1.3rem] bg-[var(--surface-muted)] px-4 py-4 text-sm text-slate-700">
             <span className="font-semibold text-slate-900">Categories:</span> {workspace.categories.length}
@@ -72,11 +62,12 @@ export function FinanceReviewPage({ workspace }: FinanceReviewPageProps) {
       </div>
 
       <div className="space-y-3">
-        {workspace.transactions.length > 0 ? (
-          workspace.transactions.map((transaction) => {
+        {pendingReview.length > 0 ? (
+          pendingReview.map((transaction) => {
             const category = transaction.finance_category_id
               ? categoryMap.get(transaction.finance_category_id)
               : null;
+            const defaultKind = transaction.suggested_category_kind ?? (transaction.direction === "credit" ? "income" : "expense");
 
             return (
               <article key={transaction.id} className="rounded-[2rem] border border-[var(--border-soft)] bg-white px-6 py-6 shadow-[0_24px_50px_-35px_rgba(15,23,42,0.35)]">
@@ -93,68 +84,110 @@ export function FinanceReviewPage({ workspace }: FinanceReviewPageProps) {
                       {transaction.counterparty ? ` · ${transaction.counterparty}` : ""}
                       {category ? ` · ${category.name}` : " · Unmapped"}
                     </p>
+                    {transaction.suggested_category_name ? (
+                      <p className="mt-2 text-sm leading-6 text-slate-600">
+                        Suggested: <span className="font-medium text-slate-900">{transaction.suggested_category_name}</span>
+                      </p>
+                    ) : null}
+                    {transaction.notes ? (
+                      <p className="mt-2 text-sm leading-6 text-slate-500">{transaction.notes}</p>
+                    ) : null}
                   </div>
                   <p className={`text-lg font-semibold ${transaction.direction === "credit" ? "text-emerald-700" : "text-rose-700"}`}>
                     {transaction.direction === "credit" ? "+" : "-"}{formatMoney(transaction.amount)}
                   </p>
                 </div>
-                <div className="mt-4 flex flex-wrap gap-3">
-                  <form action={updateTransactionReviewAction} className="flex flex-wrap items-center gap-3">
-                    <input type="hidden" name="transactionId" value={transaction.id} />
-                    <input type="hidden" name="statementImportId" value={transaction.statement_import_id} />
-                    <select
-                      name="financeCategoryId"
-                      defaultValue={transaction.finance_category_id ?? ""}
-                      disabled={!workspace.canMutate}
-                      className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 outline-none transition focus:border-[var(--accent-deep)] disabled:cursor-not-allowed disabled:bg-slate-100"
-                    >
-                      <option value="">Leave unmapped</option>
-                      {workspace.categories.map((item) => (
-                        <option key={item.id} value={item.id}>
-                          {item.kind} - {item.name}
-                        </option>
-                      ))}
-                    </select>
-                    <select
-                      name="reviewStatus"
-                      defaultValue={transaction.review_status}
-                      disabled={!workspace.canMutate}
-                      className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 outline-none transition focus:border-[var(--accent-deep)] disabled:cursor-not-allowed disabled:bg-slate-100"
-                    >
-                      <option value="pending">Pending</option>
-                      <option value="categorized">Categorized</option>
-                      <option value="needs_review">Needs review</option>
-                    </select>
-                    <button
-                      type="submit"
-                      disabled={!workspace.canMutate}
-                      className="rounded-full bg-[var(--accent-deep)] px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      Save
-                    </button>
-                  </form>
-                  <form action={archiveTransactionAction}>
-                    <input type="hidden" name="transactionId" value={transaction.id} />
-                    <input type="hidden" name="statementImportId" value={transaction.statement_import_id} />
-                    <button
-                      type="submit"
-                      disabled={!workspace.canMutate}
-                      className="rounded-full border border-rose-200 px-4 py-2 text-sm font-medium text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      Archive
-                    </button>
-                  </form>
+                <div className="mt-4 space-y-3">
+                  {!category ? (
+                    <div className="space-y-3 rounded-[1.25rem] bg-[var(--surface-muted)] px-4 py-3">
+                      {transaction.suggested_category_name ? (
+                        <form action={createCategoryFromSuggestionAction} className="flex flex-wrap items-center gap-3">
+                          <input type="hidden" name="transactionId" value={transaction.id} />
+                          <input type="hidden" name="statementImportId" value={transaction.statement_import_id} />
+                          <input type="hidden" name="suggestedCategoryName" value={transaction.suggested_category_name} />
+                          <input type="hidden" name="suggestedCategoryKind" value={defaultKind} />
+                          <p className="text-sm text-slate-700">Create and apply suggested category:</p>
+                          <button
+                            type="submit"
+                            disabled={!workspace.canMutate}
+                            className="rounded-full bg-[var(--accent-deep)] px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            Use &quot;{transaction.suggested_category_name}&quot;
+                          </button>
+                        </form>
+                      ) : null}
+                      <form action={createCategoryFromCustomAction} className="flex flex-wrap items-center gap-3 border-t border-slate-200 pt-3">
+                        <input type="hidden" name="transactionId" value={transaction.id} />
+                        <input type="hidden" name="statementImportId" value={transaction.statement_import_id} />
+                        <input type="hidden" name="categoryKind" value={defaultKind} />
+                        <label className="text-sm text-slate-700" htmlFor={`custom-category-${transaction.id}`}>
+                          Create other category:
+                        </label>
+                        <input
+                          id={`custom-category-${transaction.id}`}
+                          type="text"
+                          name="categoryName"
+                          placeholder="Type a new category"
+                          disabled={!workspace.canMutate}
+                          className="min-w-[14rem] flex-1 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 outline-none transition focus:border-[var(--accent-deep)] disabled:cursor-not-allowed disabled:bg-slate-100"
+                        />
+                        <button
+                          type="submit"
+                          disabled={!workspace.canMutate}
+                          className="rounded-full border border-[var(--accent-deep)] px-4 py-2 text-sm font-medium text-[var(--accent-deep)] transition hover:bg-[var(--accent-soft)] disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          Create other category
+                        </button>
+                      </form>
+                    </div>
+                  ) : null}
+                  <div className="flex flex-wrap gap-3">
+                    <form action={updateTransactionReviewAction} className="flex flex-wrap items-center gap-3">
+                      <input type="hidden" name="transactionId" value={transaction.id} />
+                      <input type="hidden" name="statementImportId" value={transaction.statement_import_id} />
+                      <select
+                        name="financeCategoryId"
+                        defaultValue={transaction.finance_category_id ?? ""}
+                        disabled={!workspace.canMutate}
+                        className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 outline-none transition focus:border-[var(--accent-deep)] disabled:cursor-not-allowed disabled:bg-slate-100"
+                      >
+                        <option value="">Leave unmapped</option>
+                        {workspace.categories.map((item) => (
+                          <option key={item.id} value={item.id}>
+                            {item.kind} - {item.name}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="submit"
+                        disabled={!workspace.canMutate}
+                        className="rounded-full bg-[var(--accent-deep)] px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        Apply category
+                      </button>
+                    </form>
+                    <form action={archiveTransactionAction}>
+                      <input type="hidden" name="transactionId" value={transaction.id} />
+                      <input type="hidden" name="statementImportId" value={transaction.statement_import_id} />
+                      <button
+                        type="submit"
+                        disabled={!workspace.canMutate}
+                        className="rounded-full border border-rose-200 px-4 py-2 text-sm font-medium text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        Archive
+                      </button>
+                    </form>
+                  </div>
                 </div>
               </article>
             );
           })
         ) : (
           <div className="rounded-[2rem] border border-dashed border-[var(--border-strong)] bg-white px-6 py-6 text-sm leading-6 text-slate-600">
-            No transactions yet.
+            Everything is categorized right now. Open any import to inspect its categorized transactions.
           </div>
         )}
       </div>
     </section>
   );
 }
-

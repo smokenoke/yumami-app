@@ -3,25 +3,40 @@
 import { AppShell } from "@/components/app-shell";
 import { HomeDashboard } from "@/features/home/home-dashboard";
 import { EntryScreen } from "@/features/auth/entry-screen";
+import { HouseholdGateway } from "@/features/households/household-gateway";
 import { buildDashboardSummary } from "@/features/dashboard/summary";
 import { getAuthState } from "@/lib/supabase/session";
+import { getViewerHouseholdState } from "@/lib/yumami/households";
 import { getCalendarWorkspace } from "@/lib/yumami/calendar";
 import { getFileWorkspace } from "@/lib/yumami/files";
 import { getFinanceWorkspace } from "@/lib/yumami/finance";
 import { getTaskWorkspace } from "@/lib/yumami/tasks";
 
 export default async function Home() {
-  const [authState, taskWorkspace, fileWorkspace, financeWorkspace, calendarWorkspace] = await Promise.all([
-    getAuthState(),
+  const authState = await getAuthState();
+
+  if (!authState.hasEntryAccess) {
+    return <EntryScreen isConfigured={authState.isConfigured} />;
+  }
+
+  if (authState.user) {
+    const viewerState = await getViewerHouseholdState();
+    if (viewerState.needsOnboarding || viewerState.needsHouseholdSelection) {
+      return (
+        <HouseholdGateway
+          viewerState={viewerState}
+          userEmail={authState.user.email ?? undefined}
+        />
+      );
+    }
+  }
+
+  const [taskWorkspace, fileWorkspace, financeWorkspace, calendarWorkspace] = await Promise.all([
     getTaskWorkspace(),
     getFileWorkspace(),
     getFinanceWorkspace(),
     getCalendarWorkspace(),
   ]);
-
-  if (!authState.hasEntryAccess) {
-    return <EntryScreen isConfigured={authState.isConfigured} />;
-  }
 
   const summary = buildDashboardSummary(
     taskWorkspace,
@@ -35,6 +50,8 @@ export default async function Home() {
       eyebrow="Yumami"
       title="What matters next, in one calm place."
       description="See the most important parts of your shared home life first, then jump into the full pages when you need more detail."
+      userEmail={authState.user?.email ?? authState.demoEmail ?? undefined}
+      isDemo={!authState.user && Boolean(authState.demoEmail)}
       actions={
         <>
           <Link href="/tasks" className="rounded-full border border-[var(--border-soft)] bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
@@ -58,4 +75,3 @@ export default async function Home() {
     </AppShell>
   );
 }
-

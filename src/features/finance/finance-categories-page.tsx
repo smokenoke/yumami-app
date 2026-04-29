@@ -1,5 +1,8 @@
 ﻿import { ActionPanel } from "@/components/action-panel";
-import { archiveFinanceCategoryAction } from "@/features/finance/actions";
+import {
+  archiveAllFinanceCategoriesAction,
+  archiveFinanceCategoryAction,
+} from "@/features/finance/actions";
 import { FinanceCategoryComposer } from "@/features/finance/finance-category-composer";
 import type { FinanceWorkspace } from "@/types/domain";
 
@@ -17,18 +20,29 @@ export function FinanceCategoriesPage({ workspace }: FinanceCategoriesPageProps)
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[var(--accent-deep)]">Categories</p>
-            <h2 className="mt-3 text-2xl font-semibold text-slate-900">Your reporting buckets</h2>
-            <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600">Keep these separate from the monthly overview so the finance home stays simple.</p>
+            <h2 className="mt-3 text-2xl font-semibold text-slate-900">Your own reporting buckets</h2>
+            <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600">Yumami no longer seeds personal or default household categories in live mode. Start clean and let suggestions plus review shape the structure you actually want.</p>
           </div>
-          <ActionPanel
-            buttonLabel="Add category"
-            title="Add category"
-            description="Create a new category when your real household flow changes."
-            variant="primary"
-            disabled={!workspace.canMutate}
-          >
-            <FinanceCategoryComposer canMutate={workspace.canMutate} />
-          </ActionPanel>
+          <div className="flex flex-wrap gap-3">
+            <ActionPanel
+              buttonLabel="Add category"
+              title="Add category"
+              description="Create a new category when your real household flow needs one."
+              variant="primary"
+              disabled={!workspace.canMutate}
+            >
+              <FinanceCategoryComposer canMutate={workspace.canMutate} />
+            </ActionPanel>
+            <form action={archiveAllFinanceCategoriesAction}>
+              <button
+                type="submit"
+                disabled={!workspace.canMutate || workspace.categories.length === 0}
+                className="rounded-full border border-rose-200 px-4 py-2 text-sm font-medium text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Wipe categories
+              </button>
+            </form>
+          </div>
         </div>
       </div>
 
@@ -43,7 +57,7 @@ export function FinanceCategoriesPage({ workspace }: FinanceCategoriesPageProps)
               <span className="rounded-full bg-[var(--surface-muted)] px-3 py-1 text-sm font-medium text-slate-700">{group.items.length}</span>
             </div>
             <div className="mt-4 space-y-3">
-              {group.items.map((category) => (
+              {group.items.length > 0 ? group.items.map((category) => (
                 <div key={category.id} className="flex flex-wrap items-center justify-between gap-3 rounded-[1.4rem] border border-[var(--border-strong)] bg-[var(--surface-muted)] px-4 py-4">
                   <div className="flex items-center gap-3">
                     <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] ${group.chip}`}>
@@ -62,7 +76,11 @@ export function FinanceCategoriesPage({ workspace }: FinanceCategoriesPageProps)
                     </button>
                   </form>
                 </div>
-              ))}
+              )) : (
+                <div className="rounded-[1.4rem] border border-dashed border-[var(--border-strong)] bg-[var(--surface-muted)] px-4 py-4 text-sm leading-6 text-slate-600">
+                  No categories yet. Import a statement first or add your own structure here.
+                </div>
+              )}
             </div>
           </section>
         ))}
@@ -70,4 +88,3 @@ export function FinanceCategoriesPage({ workspace }: FinanceCategoriesPageProps)
     </section>
   );
 }
-

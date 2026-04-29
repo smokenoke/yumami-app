@@ -18,8 +18,7 @@ export function EntryScreen({ isConfigured }: EntryScreenProps) {
               A calmer home for your shared life.
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-8 text-[var(--muted-ink)]">
-              Open Yumami with a simple email step first. From there, you can
-              continue in demo mode or use a sign-in link when Supabase is ready.
+              Sign in to your account, create a household, and invite the other person into the same shared space.
             </p>
 
             <div className="mt-7 grid gap-3 sm:grid-cols-3">
@@ -56,41 +55,47 @@ export function EntryScreen({ isConfigured }: EntryScreenProps) {
                 Get started
               </p>
               <h2 className="mt-4 text-3xl font-semibold tracking-[-0.04em] text-slate-900">
-                Start with your email
+                Sign in or create your account
               </h2>
               <p className="mt-3 text-sm leading-7 text-[var(--muted-ink)]">
-                Even in demo mode, Yumami should feel like a real app entry point.
+                Use email and password for real households. Demo mode stays available while you test the flow.
               </p>
             </div>
-
-            <form action={continueWithDemoAction} className="mt-6 space-y-4">
-              <label className="block">
-                <span className="mb-2 block text-sm font-medium text-slate-700">
-                  Email
-                </span>
-                <input
-                  type="email"
-                  name="email"
-                  required
-                  placeholder="you@example.com"
-                  className="w-full rounded-[1.4rem] border border-[var(--border-soft)] bg-white px-4 py-3.5 text-sm text-slate-900 outline-none transition focus:border-[var(--accent-deep)]"
-                />
-              </label>
-              <button
-                type="submit"
-                className="w-full rounded-full bg-[var(--accent-deep)] px-4 py-3 text-sm font-medium text-white transition hover:opacity-90"
-              >
-                Continue to Yumami
-              </button>
-            </form>
 
             <div className="mt-6 rounded-[1.6rem] border border-[var(--border-strong)] bg-[var(--surface-muted)] px-4 py-4">
               <p className="text-sm font-medium text-slate-900">
                 {isConfigured
-                  ? "Supabase is available if you want to sign in for real."
+                  ? "Supabase is connected, so you can use real accounts now."
                   : "Supabase is not configured yet, so demo access stays useful while you keep building."}
               </p>
               {isConfigured ? <AuthEntryCard compact /> : null}
+            </div>
+
+            <div className="mt-6 rounded-[1.6rem] border border-[var(--border-strong)] bg-white px-4 py-4">
+              <p className="text-sm font-medium text-slate-900">Or keep moving in demo mode</p>
+              <p className="mt-2 text-sm leading-6 text-[var(--muted-ink)]">
+                This still lets you explore the product before the live household setup is finished.
+              </p>
+              <form action={continueWithDemoAction} className="mt-4 space-y-4">
+                <label className="block">
+                  <span className="mb-2 block text-sm font-medium text-slate-700">
+                    Email
+                  </span>
+                  <input
+                    type="email"
+                    name="email"
+                    required
+                    placeholder="you@example.com"
+                    className="w-full rounded-[1.4rem] border border-[var(--border-soft)] bg-white px-4 py-3.5 text-sm text-slate-900 outline-none transition focus:border-[var(--accent-deep)]"
+                  />
+                </label>
+                <button
+                  type="submit"
+                  className="w-full rounded-full border border-[var(--border-soft)] bg-white px-4 py-3 text-sm font-medium text-slate-800 transition hover:bg-slate-50"
+                >
+                  Continue in demo mode
+                </button>
+              </form>
             </div>
           </section>
         </div>
@@ -98,4 +103,3 @@ export function EntryScreen({ isConfigured }: EntryScreenProps) {
     </main>
   );
 }
-

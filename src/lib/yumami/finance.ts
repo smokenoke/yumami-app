@@ -1,9 +1,10 @@
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getHouseholdContextForActions } from "@/lib/yumami/tasks";
 import type {
   FinanceCategory,
   FinanceMonthlyRollup,
   FinanceWorkspace,
+  MerchantCategoryRule,
   StatementImport,
   StatementTransaction,
 } from "@/types/domain";
@@ -27,33 +28,15 @@ const demoImports: StatementImport[] = [
   },
 ];
 
-const defaultHouseholdCategories = [
-  { name: "Input Maxim", kind: "income" },
-  { name: "Input Yuxi", kind: "income" },
-  { name: "Teruggave vrienden", kind: "income" },
-  { name: "Teruggave Pidpa", kind: "income" },
-  { name: "Huur", kind: "expense" },
-  { name: "Apartment verzekering", kind: "expense" },
-  { name: "Elektriciteit Bolt", kind: "expense" },
-  { name: "Pidpa", kind: "expense" },
-  { name: "Telecom", kind: "expense" },
-  { name: "Boodschappen", kind: "expense" },
-  { name: "Uiteten", kind: "expense" },
-  { name: "Uitgaan", kind: "expense" },
-  { name: "Meubelen", kind: "expense" },
-  { name: "Sporten", kind: "expense" },
-  { name: "Shoppen", kind: "expense" },
-  { name: "TV abonnementen", kind: "expense" },
-  { name: "Provinciebelasting?", kind: "expense" },
-  { name: "Boete", kind: "expense" },
-  { name: "Cadeaus", kind: "expense" },
-  { name: "KBC plusrekening", kind: "expense" },
-  { name: "Vakantie totaal", kind: "expense" },
-  { name: "Parking", kind: "expense" },
-  { name: "Totaal boodschappen met Edenred", kind: "expense" },
+const demoSuggestedCategories = [
+  { name: "Shared contribution", kind: "income" },
+  { name: "Rent", kind: "expense" },
+  { name: "Groceries", kind: "expense" },
+  { name: "Utilities", kind: "expense" },
+  { name: "Dining out", kind: "expense" },
 ] as const satisfies ReadonlyArray<{ name: string; kind: FinanceCategory["kind"] }>;
 
-const demoCategories: FinanceCategory[] = defaultHouseholdCategories.map((category, index) => ({
+const demoCategories: FinanceCategory[] = demoSuggestedCategories.map((category, index) => ({
   id: `demo-category-${index + 1}`,
   household_id: "demo-household",
   created_by_user_id: "demo-user",
@@ -64,6 +47,18 @@ const demoCategories: FinanceCategory[] = defaultHouseholdCategories.map((catego
   updated_at: "2026-03-23T09:00:00.000Z",
 }));
 
+const demoMerchantRules: MerchantCategoryRule[] = [
+  {
+    id: "demo-rule-1",
+    household_id: "demo-household",
+    finance_category_id: demoCategories[2].id,
+    normalized_merchant: "albert heijn 3152 be2800 mechelen",
+    created_by_user_id: "demo-user",
+    created_at: "2026-03-23T09:30:00.000Z",
+    updated_at: "2026-03-23T09:30:00.000Z",
+  },
+];
+
 function findDemoCategoryId(name: string) {
   return demoCategories.find((category) => category.name === name)?.id ?? null;
 }
@@ -73,7 +68,7 @@ const demoTransactions: StatementTransaction[] = [
     id: "demo-tx-1",
     household_id: "demo-household",
     statement_import_id: "demo-import-1",
-    finance_category_id: findDemoCategoryId("Huur"),
+    finance_category_id: findDemoCategoryId("Rent"),
     transaction_date: "2026-02-01",
     booking_date: "2026-02-01",
     counterparty: "Landlord",
@@ -85,6 +80,8 @@ const demoTransactions: StatementTransaction[] = [
     confidence_score: 1,
     source_row_key: null,
     notes: null,
+    suggested_category_name: "Rent",
+    suggested_category_kind: "expense",
     archived_at: null,
     created_at: "2026-03-23T09:10:00.000Z",
     updated_at: "2026-03-23T09:10:00.000Z",
@@ -93,18 +90,20 @@ const demoTransactions: StatementTransaction[] = [
     id: "demo-tx-2",
     household_id: "demo-household",
     statement_import_id: "demo-import-1",
-    finance_category_id: findDemoCategoryId("Input Maxim"),
+    finance_category_id: null,
     transaction_date: "2026-02-03",
     booking_date: "2026-02-03",
-    counterparty: "Maxim",
+    counterparty: "WU YUXI",
     description: "Household contribution",
     amount: 2100,
     currency: "EUR",
     direction: "credit",
-    review_status: "categorized",
-    confidence_score: 1,
+    review_status: "needs_review",
+    confidence_score: 0.82,
     source_row_key: null,
-    notes: null,
+    notes: "Suggestion available.",
+    suggested_category_name: "Shared contribution",
+    suggested_category_kind: "income",
     archived_at: null,
     created_at: "2026-03-23T09:11:00.000Z",
     updated_at: "2026-03-23T09:11:00.000Z",
@@ -113,7 +112,7 @@ const demoTransactions: StatementTransaction[] = [
     id: "demo-tx-3",
     household_id: "demo-household",
     statement_import_id: "demo-import-1",
-    finance_category_id: findDemoCategoryId("Boodschappen"),
+    finance_category_id: findDemoCategoryId("Groceries"),
     transaction_date: "2026-02-07",
     booking_date: "2026-02-07",
     counterparty: "Albert Heijn",
@@ -125,6 +124,8 @@ const demoTransactions: StatementTransaction[] = [
     confidence_score: 0.9,
     source_row_key: null,
     notes: null,
+    suggested_category_name: "Groceries",
+    suggested_category_kind: "expense",
     archived_at: null,
     created_at: "2026-03-23T09:12:00.000Z",
     updated_at: "2026-03-23T09:12:00.000Z",
@@ -145,6 +146,8 @@ const demoTransactions: StatementTransaction[] = [
     confidence_score: 0.2,
     source_row_key: null,
     notes: "Needs manual category selection.",
+    suggested_category_name: null,
+    suggested_category_kind: null,
     archived_at: null,
     created_at: "2026-03-23T09:13:00.000Z",
     updated_at: "2026-03-23T09:13:00.000Z",
@@ -190,8 +193,8 @@ function buildFinanceRollups(
     }
 
     const category = transaction.finance_category_id
-      ? categoryMap.get(transaction.finance_category_id)?.name ?? "Unmapped"
-      : "Unmapped";
+      ? categoryMap.get(transaction.finance_category_id)?.name ?? transaction.suggested_category_name ?? "Unmapped"
+      : transaction.suggested_category_name ?? "Unmapped";
     const existingCategory = existing.topCategories.find((item) => item.name === category);
     if (existingCategory) {
       existingCategory.total += amount;
@@ -209,28 +212,6 @@ function buildFinanceRollups(
       topCategories: [...rollup.topCategories].sort((a, b) => b.total - a.total).slice(0, 4),
     }))
     .sort((a, b) => b.month.localeCompare(a.month));
-}
-
-async function ensureDefaultFinanceCategories(householdId: string, userId: string): Promise<void> {
-  const supabase = await createSupabaseServerClient();
-  const existingCategoryResult = await supabase
-    .from("finance_categories")
-    .select("id")
-    .eq("household_id", householdId)
-    .limit(1);
-
-  if (existingCategoryResult.error || (existingCategoryResult.data?.length ?? 0) > 0) {
-    return;
-  }
-
-  await supabase.from("finance_categories").insert(
-    defaultHouseholdCategories.map((category) => ({
-      household_id: householdId,
-      created_by_user_id: userId,
-      name: category.name,
-      kind: category.kind,
-    })),
-  );
 }
 
 export async function syncStatementImportCounters(statementImportId: string, householdId: string) {
@@ -281,18 +262,17 @@ export async function getFinanceWorkspace(): Promise<FinanceWorkspace> {
         householdName: "Demo household",
         imports: demoImports,
         categories: demoCategories,
+        merchantRules: demoMerchantRules,
         transactions: demoTransactions,
         rollups: buildFinanceRollups(demoImports, demoTransactions, demoCategories),
         canMutate: false,
         statusMessage:
-          "Attach a signed-in user to a household to track live statement imports, transactions, and finance categories.",
+          "Attach a signed-in user to a household to track live statement imports, transactions, category suggestions, and learning rules.",
       };
     }
 
-    await ensureDefaultFinanceCategories(householdContext.householdId, householdContext.userId);
-
     const supabase = await createSupabaseServerClient();
-    const [importResult, categoryResult, transactionResult] = await Promise.all([
+    const [importResult, categoryResult, transactionResult, ruleResult] = await Promise.all([
       supabase
         .from("statement_imports")
         .select("*")
@@ -313,14 +293,20 @@ export async function getFinanceWorkspace(): Promise<FinanceWorkspace> {
         .is("archived_at", null)
         .order("transaction_date", { ascending: false })
         .order("created_at", { ascending: false }),
+      supabase
+        .from("merchant_category_rules")
+        .select("*")
+        .eq("household_id", householdContext.householdId)
+        .order("updated_at", { ascending: false }),
     ]);
 
-    if (importResult.error || categoryResult.error || transactionResult.error) {
+    if (importResult.error || categoryResult.error || transactionResult.error || ruleResult.error) {
       return {
         mode: "demo",
         householdName: householdContext.householdName,
         imports: demoImports,
         categories: demoCategories,
+        merchantRules: demoMerchantRules,
         transactions: demoTransactions,
         rollups: buildFinanceRollups(demoImports, demoTransactions, demoCategories),
         canMutate: false,
@@ -332,17 +318,19 @@ export async function getFinanceWorkspace(): Promise<FinanceWorkspace> {
     const imports = (importResult.data ?? []) as StatementImport[];
     const categories = (categoryResult.data ?? []) as FinanceCategory[];
     const transactions = (transactionResult.data ?? []) as StatementTransaction[];
+    const merchantRules = (ruleResult.data ?? []) as MerchantCategoryRule[];
 
     return {
       mode: "live",
       householdName: householdContext.householdName,
       imports,
       categories,
+      merchantRules,
       transactions,
       rollups: buildFinanceRollups(imports, transactions, categories),
       canMutate: true,
       statusMessage:
-        "Live finance intake is active. Statement imports, transactions, and household categories now reflect your spreadsheet workflow and are ready for later parsing and monthly rollups.",
+        "Live finance intake is active. Statements are read automatically, categories are suggested, and your review choices are now remembered for future imports.",
     };
   } catch {
     return {
@@ -350,6 +338,7 @@ export async function getFinanceWorkspace(): Promise<FinanceWorkspace> {
       householdName: "Demo household",
       imports: demoImports,
       categories: demoCategories,
+      merchantRules: demoMerchantRules,
       transactions: demoTransactions,
       rollups: buildFinanceRollups(demoImports, demoTransactions, demoCategories),
       canMutate: false,

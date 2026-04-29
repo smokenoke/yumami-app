@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useActionState } from "react";
 
@@ -35,15 +35,6 @@ export function StatementImportComposer({ canMutate }: StatementImportComposerPr
         />
       </div>
       <div>
-        <label className="mb-2 block text-sm font-medium text-slate-700">Statement month</label>
-        <input
-          type="month"
-          name="statementMonth"
-          disabled={!canMutate || pending}
-          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[var(--accent-deep)] disabled:cursor-not-allowed disabled:bg-slate-100"
-        />
-      </div>
-      <div>
         <label className="mb-2 block text-sm font-medium text-slate-700">PDF statement</label>
         <input
           type="file"
@@ -52,6 +43,9 @@ export function StatementImportComposer({ canMutate }: StatementImportComposerPr
           disabled={!canMutate || pending}
           className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition file:mr-3 file:rounded-full file:border-0 file:bg-[var(--accent-soft)] file:px-3 file:py-2 file:text-sm file:font-medium file:text-[var(--accent-deep)] disabled:cursor-not-allowed disabled:bg-slate-100"
         />
+        <p className="mt-2 text-xs leading-5 text-slate-500">
+          Yumami will detect the statement period from the PDF automatically.
+        </p>
       </div>
       <div>
         <label className="mb-2 block text-sm font-medium text-slate-700">Notes</label>
@@ -68,7 +62,7 @@ export function StatementImportComposer({ canMutate }: StatementImportComposerPr
         disabled={!canMutate || pending}
         className="rounded-full bg-[var(--accent-deep)] px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {pending ? "Queueing import..." : canMutate ? "Queue statement import" : "Live imports locked"}
+        {pending ? "Reading statement..." : canMutate ? "Import statement" : "Live imports locked"}
       </button>
       {state.status !== "idle" ? (
         <p

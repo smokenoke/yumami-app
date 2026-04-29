@@ -3,10 +3,13 @@
 export type Household = Database["public"]["Tables"]["households"]["Row"];
 export type HouseholdMember =
   Database["public"]["Tables"]["household_members"]["Row"];
+export type HouseholdInvite =
+  Database["public"]["Tables"]["household_invites"]["Row"];
 export type Task = Database["public"]["Tables"]["tasks"]["Row"];
 export type FileLink = Database["public"]["Tables"]["file_links"]["Row"];
 export type StatementImport = Database["public"]["Tables"]["statement_imports"]["Row"];
 export type FinanceCategory = Database["public"]["Tables"]["finance_categories"]["Row"];
+export type MerchantCategoryRule = Database["public"]["Tables"]["merchant_category_rules"]["Row"];
 export type StatementTransaction =
   Database["public"]["Tables"]["statement_transactions"]["Row"];
 export type HouseholdCalendar = Database["public"]["Tables"]["household_calendars"]["Row"];
@@ -51,6 +54,50 @@ export interface HouseholdParticipant {
   role: HouseholdMember["role"];
 }
 
+export interface HouseholdMembershipOption {
+  householdId: string;
+  householdName: string;
+  role: HouseholdMember["role"];
+  displayName: string | null;
+}
+
+export interface PendingHouseholdInvite {
+  inviteId: string;
+  householdId: string;
+  householdName: string;
+  invitedEmail: string;
+  role: HouseholdInvite["role"];
+  token: string;
+  status: HouseholdInvite["status"];
+  expiresAt: string;
+  isEligible: boolean;
+  isExpired: boolean;
+}
+
+export interface ViewerHouseholdState {
+  memberships: HouseholdMembershipOption[];
+  activeHousehold: HouseholdMembershipOption | null;
+  pendingInvite: PendingHouseholdInvite | null;
+  needsOnboarding: boolean;
+  needsHouseholdSelection: boolean;
+}
+
+export interface HouseholdSettingsMember {
+  userId: string;
+  displayName: string;
+  role: HouseholdMember["role"];
+  createdAt: string;
+}
+
+export interface HouseholdSettingsInvite {
+  inviteId: string;
+  invitedEmail: string;
+  role: HouseholdInvite["role"];
+  status: HouseholdInvite["status"];
+  expiresAt: string;
+  acceptedAt: string | null;
+}
+
 export interface TaskWorkspace {
   mode: "demo" | "live";
   householdName: string;
@@ -74,6 +121,7 @@ export interface FinanceWorkspace {
   householdName: string;
   imports: StatementImport[];
   categories: FinanceCategory[];
+  merchantRules: MerchantCategoryRule[];
   transactions: StatementTransaction[];
   rollups: FinanceMonthlyRollup[];
   canMutate: boolean;

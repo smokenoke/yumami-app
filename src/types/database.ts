@@ -18,6 +18,7 @@ export type ParserStatus = "queued" | "parsed" | "manual_review" | "failed";
 export type FinanceCategoryKind = "income" | "expense";
 export type TransactionDirection = "debit" | "credit";
 export type TransactionReviewStatus = "pending" | "categorized" | "needs_review";
+export type HouseholdInviteStatus = "pending" | "accepted" | "revoked" | "expired";
 export type CalendarProvider = "icloud" | "google" | "outlook" | "other";
 export type CalendarSourceKind = "manual" | "linked";
 
@@ -34,6 +35,20 @@ type HouseholdMemberRow = {
   role: "owner" | "member";
   display_name: string | null;
   created_at: string;
+};
+
+type HouseholdInviteRow = {
+  id: string;
+  household_id: string;
+  invited_by_user_id: string;
+  invited_email: string;
+  role: "owner" | "member";
+  token: string;
+  status: HouseholdInviteStatus;
+  expires_at: string;
+  accepted_at: string | null;
+  created_at: string;
+  updated_at: string;
 };
 
 type TaskRow = {
@@ -94,6 +109,16 @@ type FinanceCategoryRow = {
   updated_at: string;
 };
 
+type MerchantCategoryRuleRow = {
+  id: string;
+  household_id: string;
+  finance_category_id: string;
+  normalized_merchant: string;
+  created_by_user_id: string;
+  created_at: string;
+  updated_at: string;
+};
+
 type StatementTransactionRow = {
   id: string;
   household_id: string;
@@ -110,6 +135,8 @@ type StatementTransactionRow = {
   confidence_score: number | null;
   source_row_key: string | null;
   notes: string | null;
+  suggested_category_name: string | null;
+  suggested_category_kind: FinanceCategoryKind | null;
   archived_at: string | null;
   created_at: string;
   updated_at: string;
@@ -182,6 +209,44 @@ export interface Database {
         Relationships: [
           {
             foreignKeyName: "household_members_household_id_fkey";
+            columns: ["household_id"];
+            isOneToOne: false;
+            referencedRelation: "households";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      household_invites: {
+        Row: HouseholdInviteRow;
+        Insert: {
+          id?: string;
+          household_id: string;
+          invited_by_user_id: string;
+          invited_email: string;
+          role?: "owner" | "member";
+          token: string;
+          status?: HouseholdInviteStatus;
+          expires_at: string;
+          accepted_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          household_id?: string;
+          invited_by_user_id?: string;
+          invited_email?: string;
+          role?: "owner" | "member";
+          token?: string;
+          status?: HouseholdInviteStatus;
+          expires_at?: string;
+          accepted_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "household_invites_household_id_fkey";
             columns: ["household_id"];
             isOneToOne: false;
             referencedRelation: "households";
@@ -345,6 +410,43 @@ export interface Database {
           }
         ];
       };
+      merchant_category_rules: {
+        Row: MerchantCategoryRuleRow;
+        Insert: {
+          id?: string;
+          household_id: string;
+          finance_category_id: string;
+          normalized_merchant: string;
+          created_by_user_id: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          household_id?: string;
+          finance_category_id?: string;
+          normalized_merchant?: string;
+          created_by_user_id?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "merchant_category_rules_household_id_fkey";
+            columns: ["household_id"];
+            isOneToOne: false;
+            referencedRelation: "households";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "merchant_category_rules_finance_category_id_fkey";
+            columns: ["finance_category_id"];
+            isOneToOne: false;
+            referencedRelation: "finance_categories";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       statement_transactions: {
         Row: StatementTransactionRow;
         Insert: {
@@ -363,6 +465,8 @@ export interface Database {
           confidence_score?: number | null;
           source_row_key?: string | null;
           notes?: string | null;
+          suggested_category_name?: string | null;
+          suggested_category_kind?: FinanceCategoryKind | null;
           archived_at?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -383,6 +487,8 @@ export interface Database {
           confidence_score?: number | null;
           source_row_key?: string | null;
           notes?: string | null;
+          suggested_category_name?: string | null;
+          suggested_category_kind?: FinanceCategoryKind | null;
           archived_at?: string | null;
           created_at?: string;
           updated_at?: string;

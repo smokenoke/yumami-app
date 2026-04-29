@@ -1,4 +1,5 @@
 ﻿import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getActiveHouseholdContextForActions } from "@/lib/yumami/households";
 import type { HouseholdParticipant, Task, TaskWorkspace } from "@/types/domain";
 
 const demoMembers: HouseholdParticipant[] = [
@@ -68,12 +69,6 @@ const demoArchivedTasks: Task[] = [
   },
 ];
 
-interface HouseholdContext {
-  householdId: string;
-  householdName: string;
-  userId: string;
-}
-
 function sortTasks(tasks: Task[]) {
   const priorityRank = {
     high: 0,
@@ -105,44 +100,6 @@ function sortTasks(tasks: Task[]) {
   });
 }
 
-async function getCurrentHouseholdContext(): Promise<HouseholdContext | null> {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return null;
-  }
-
-  const membershipResult = await supabase
-    .from("household_members")
-    .select("household_id")
-    .eq("user_id", user.id)
-    .limit(1)
-    .maybeSingle();
-
-  if (membershipResult.error || !membershipResult.data) {
-    return null;
-  }
-
-  const householdResult = await supabase
-    .from("households")
-    .select("name")
-    .eq("id", membershipResult.data.household_id)
-    .single();
-
-  if (householdResult.error || !householdResult.data) {
-    return null;
-  }
-
-  return {
-    householdId: membershipResult.data.household_id,
-    householdName: householdResult.data.name,
-    userId: user.id,
-  };
-}
-
 async function getHouseholdMembers(householdId: string): Promise<HouseholdParticipant[]> {
   const supabase = await createSupabaseServerClient();
   const result = await supabase
@@ -164,7 +121,7 @@ async function getHouseholdMembers(householdId: string): Promise<HouseholdPartic
 
 export async function getTaskWorkspace(): Promise<TaskWorkspace> {
   try {
-    const householdContext = await getCurrentHouseholdContext();
+    const householdContext = await getActiveHouseholdContextForActions();
 
     if (!householdContext) {
       return {
@@ -175,7 +132,7 @@ export async function getTaskWorkspace(): Promise<TaskWorkspace> {
         members: demoMembers,
         canMutate: false,
         statusMessage:
-          "Sign in and attach your user to a household to switch from demo tasks to live shared tasks.",
+          "Sign in and choose a household to switch from demo tasks to live shared tasks.",
       };
     }
 
@@ -237,5 +194,5 @@ export async function getTaskWorkspace(): Promise<TaskWorkspace> {
 }
 
 export async function getHouseholdContextForActions() {
-  return getCurrentHouseholdContext();
+  return getActiveHouseholdContextForActions();
 }
